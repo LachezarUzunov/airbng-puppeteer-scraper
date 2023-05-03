@@ -12,9 +12,20 @@ const sample = {
 const url = "https://www.airbnb.com/s/Prague--Czech-Republic/homes?tab_id=home_tab&flexible_trip_lengths%5B%5D=one_week&monthly_start_date=2023-06-01&monthly_length=3&price_filter_input_type=0&price_filter_num_nights=5&channel=EXPLORE&refinement_paths%5B%5D=%2Fhomes&place_id=ChIJi3lwCZyTC0cRkEAWZg-vAAQ&query=Prague%2C%20Czech%20Republic&date_picker_type=flexible_dates&search_type=filter_change&source=structured_search_input_header"
 
 async function scrapeHomesInIndexPage(url) {
-    const browser = await puppeteer.launch({ headless: false });
-    const page = await browser.newPage();
-    await page.goto(url);
+    try {
+        const browser = await puppeteer.launch({ headless: false });
+        const page = await browser.newPage();
+        await page.goto(url);
+        const html = await page.evaluate(() => document.body.innerHTML);
+        const $ = await cheerio.load(html);
+
+        const homes = $("[itemprop='url']").map((i, element) => {
+            $(element).attr("content")
+        }).get()
+        console.log(homes);
+    } catch (error) {
+        console.error(error)
+    }
 
 }
 
