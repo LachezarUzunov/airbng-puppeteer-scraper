@@ -19,9 +19,11 @@ async function scrapeHomesInIndexPage(url) {
         const html = await page.evaluate(() => document.body.innerHTML);
         const $ = await cheerio.load(html);
 
-        const homes = $("[itemprop='url']").map((i, element) => {
-            $(element).attr("content")
-        }).get()
+        const homes = $("[itemprop='url']")
+        .map((i, element) => {
+          return $(element).attr("content")
+        })
+        .get()
         console.log(homes);
     } catch (error) {
         console.error(error)
