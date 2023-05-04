@@ -17,7 +17,9 @@ async function scrapeHomesInIndexPage(url) {
     try {
         
         const page = await browser.newPage();
-        await page.goto(url);
+        // consider navigation to be finished when there are no more than 2 network
+        // connections for at least 500 ms
+        await page.goto(url, { waitUntil: "networkidle2" });
         const html = await page.evaluate(() => document.body.innerHTML);
         const $ = await cheerio.load(html);
 
@@ -34,11 +36,30 @@ async function scrapeHomesInIndexPage(url) {
 
 async function scrapeDescriptionPage(url, page) {
     try {
-        await page.goto(url)
+        await page.goto(url, { waitUntil: "networkidle2" });
+        const html = await page.evaluate(() => document.body.innerHTML);
+        const $ = await cheerio.load(html);
+
+        const pricePerNight = $(
+            "#site-content > div > div:nth-child(1) > div:nth-child(3) > div > div > div > div > div:nth-child(1) > div > div > div > div > div > div > div > div > div > div:nth-child(1) > div > span > div > span"
+        ).text();
+
+        const roomText = $("[data-section-id='OVERVIEW_DEFAULT']").text();
+
+        const guestMatches = roomText.match(/\d+ guest/);
+
+        let guestsAllowed = "N/A";
+
+        if (guestMatches.length > 0) {
+            guestsAllowed = guestMatches[0];
+        }
+
+
     } catch (error) {
         console.error(error)
     }
 }
+
 
 async function main () {
     browser = await puppeteer.launch({ headless: false });
