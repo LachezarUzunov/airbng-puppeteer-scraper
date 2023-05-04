@@ -28,6 +28,7 @@ async function scrapeHomesInIndexPage(url) {
           return "https://" + $(element).attr("content")
         })
         .get()
+       
         return homes;
     } catch (error) {
         console.error(error)
@@ -35,6 +36,7 @@ async function scrapeHomesInIndexPage(url) {
 }
 
 async function scrapeDescriptionPage(url, page) {
+    let roomText
     try {
         await page.goto(url, { waitUntil: "networkidle2" });
         const html = await page.evaluate(() => document.body.innerHTML);
@@ -44,20 +46,32 @@ async function scrapeDescriptionPage(url, page) {
             "#site-content > div > div:nth-child(1) > div:nth-child(3) > div > div > div > div > div:nth-child(1) > div > div > div > div > div > div > div > div > div > div:nth-child(1) > div > span > div > span"
         ).text();
 
-        const roomText = $("[data-section-id='OVERVIEW_DEFAULT']").text();
+        roomText = $("[data-section-id='OVERVIEW_DEFAULT']").text();
 
-        const guestMatches = roomText.match(/\d+ guest/);
+        const guestsAllowed = returnMatched(roomText, /\d+ guest/);
+        const bedrooms = returnMatched(roomText, /\d+ bedroom/);
+        const beds = returnMatched(roomText, /\d+ bed/);
+        const baths = returnMatched(roomText, /\d+ (shared )?bath/);
 
-        let guestsAllowed = "N/A";
-
-        if (guestMatches.length > 0) {
-            guestsAllowed = guestMatches[0];
-        }
-
-
+        console.log(pricePerNight, guestsAllowed)
+        return { url, pricePerNight, guestsAllowed, bedrooms, beds, baths };
+    
     } catch (error) {
         console.error(error)
     }
+}
+
+function returnMatched (roomText, regex) {
+    const regexMatches = roomText.match(regex);
+    let result = 'N/A';
+
+    if (regexMatches != null) {
+        result = regexMatches[0];
+    } else {
+        throw `No regex matches found for: ${regex}`
+    }
+
+    return result;
 }
 
 
@@ -65,9 +79,11 @@ async function main () {
     browser = await puppeteer.launch({ headless: false });
     const descriptionPage = await browser.newPage()
     const homes = await scrapeHomesInIndexPage(url);
-
-    for (let i = 0; i < homes.length; i++) {
-        await scrapeDescriptionPage(homes[i], descriptionPage)
+    const length = homes.length;
+    
+    for (let i = 0; i < length; i++) {
+        const result = await scrapeDescriptionPage(homes[i], descriptionPage);
+        console.log(result)
     }
 }
 
